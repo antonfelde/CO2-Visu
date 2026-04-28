@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ESP32 Sensor Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body style="font-family: Arial; text-align: center;">
+
+  <h1>🌡️ Raumdaten</h1>
+
+  <p>Temperatur: <span id="temp">--</span> °C</p>
+  <p>Luftfeuchte: <span id="hum">--</span> %</p>
+  <p>CO2: <span id="co2">--</span> ppm</p>
+  <p>KTY: <span id="kty">--</span> °C</p>
+
+  <script>
+    const url = "https://fsat23-co2-default-rtdb.europe-west1.firebasedatabase.app/sensor.json";
+
+    function loadData() {
+      fetch(url)
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById("temp").innerText = data.temp;
+          document.getElementById("hum").innerText = data.hum;
+          document.getElementById("co2").innerText = data.co2;
+          document.getElementById("kty").innerText = data.kty;
+        });
+    }
+
+    setInterval(loadData, 2000);
+    loadData();
+  </script>
+
+</body>
+</html>
