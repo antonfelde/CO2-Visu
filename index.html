@@ -4,7 +4,7 @@
   <title>Raum Monitor</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <!-- Icon für Homescreen -->
+  <!-- App Icon -->
   <link rel="icon" href="icon.png">
   <link rel="apple-touch-icon" href="icon.png">
 
@@ -86,13 +86,50 @@
 </div>
 
 <div id="weather">
-  <div class="card">🌍 Ort: <span id="city">--</span></div>
   <div class="card">🌡️ Temperatur: <span id="wtemp">--</span> °C</div>
   <div class="card">🌥️ Wetter: <span id="desc">--</span></div>
 </div>
 
 <script>
 const url = "https://fsat23-co2-default-rtdb.europe-west1.firebasedatabase.app/sensor.json";
+
+// 🔔 Notification Permission
+function requestNotificationPermission() {
+  if ("Notification" in window) {
+    Notification.requestPermission();
+  }
+}
+requestNotificationPermission();
+
+// 🔔 CO2 Logik
+let warned = false;
+
+function updateCO2Color(co2) {
+  const status = document.getElementById("co2Status");
+
+  if (co2 < 800) {
+    status.innerText = "🟢 Gut";
+    status.className = "green";
+    warned = false;
+  } 
+  else if (co2 < 1200) {
+    status.innerText = "🟡 Lüften empfohlen";
+    status.className = "yellow";
+    warned = false;
+  } 
+  else {
+    status.innerText = "🔴 SCHLECHT – LÜFTEN!";
+    status.className = "red";
+
+    if (!warned && Notification.permission === "granted") {
+      new Notification("🚨 Luftqualität schlecht!", {
+        body: "Bitte lüften! CO₂ ist zu hoch.",
+        icon: "icon.png"
+      });
+      warned = true;
+    }
+  }
+}
 
 // 🔄 Sensor Daten laden
 function loadData() {
@@ -108,22 +145,6 @@ function loadData() {
     });
 }
 
-// 🎨 CO2 Farbe
-function updateCO2Color(co2) {
-  const status = document.getElementById("co2Status");
-
-  if (co2 < 800) {
-    status.innerText = "Gut";
-    status.className = "green";
-  } else if (co2 < 1200) {
-    status.innerText = "Mittel";
-    status.className = "yellow";
-  } else {
-    status.innerText = "Schlecht";
-    status.className = "red";
-  }
-}
-
 // 🌦️ Wetter laden
 function loadWeather(lat, lon) {
   const api = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`;
@@ -136,12 +157,12 @@ function loadWeather(lat, lon) {
     });
 }
 
-// 📍 Standort holen
+// 📍 Standort
 navigator.geolocation.getCurrentPosition(pos => {
   loadWeather(pos.coords.latitude, pos.coords.longitude);
 });
 
-// 🔁 Tabs wechseln
+// 🔁 Tabs
 function showTab(tab) {
   document.getElementById("sensor").style.display = tab === "sensor" ? "block" : "none";
   document.getElementById("weather").style.display = tab === "weather" ? "block" : "none";
