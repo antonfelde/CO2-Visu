@@ -1,35 +1,156 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>ESP32 Sensor Dashboard</title>
+  <title>Raum Monitor</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-</head>
-<body style="font-family: Arial; text-align: center;">
 
-  <h1>🌡️ Raumdaten</h1>
+  <!-- Icon für Homescreen -->
+  <link rel="icon" href="icon.png">
+  <link rel="apple-touch-icon" href="icon.png">
 
-  <p>Temperatur: <span id="temp">--</span> °C</p>
-  <p>Luftfeuchte: <span id="hum">--</span> %</p>
-  <p>CO2: <span id="co2">--</span> ppm</p>
-  <p>KTY: <span id="kty">--</span> °C</p>
-
-  <script>
-    const url = "https://fsat23-co2-default-rtdb.europe-west1.firebasedatabase.app/sensor.json";
-
-    function loadData() {
-      fetch(url)
-        .then(res => res.json())
-        .then(data => {
-          document.getElementById("temp").innerText = data.temp;
-          document.getElementById("hum").innerText = data.hum;
-          document.getElementById("co2").innerText = data.co2;
-          document.getElementById("kty").innerText = data.kty;
-        });
+  <style>
+    body {
+      font-family: Arial;
+      background: #121212;
+      color: white;
+      text-align: center;
+      margin: 0;
     }
 
-    setInterval(loadData, 2000);
-    loadData();
-  </script>
+    h1 {
+      margin-top: 20px;
+    }
+
+    .card {
+      background: #1e1e1e;
+      margin: 15px;
+      padding: 20px;
+      border-radius: 15px;
+      font-size: 20px;
+    }
+
+    .co2 {
+      font-weight: bold;
+      font-size: 24px;
+    }
+
+    .green { color: #00ff88; }
+    .yellow { color: #ffcc00; }
+    .red { color: #ff4444; }
+
+    .tabs {
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    .tab {
+      padding: 10px 20px;
+      cursor: pointer;
+      background: #333;
+      margin: 5px;
+      border-radius: 10px;
+    }
+
+    .active {
+      background: #555;
+    }
+
+    #weather {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>🏠 Raum Monitor</h1>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('sensor')">📊 Sensor</div>
+  <div class="tab" onclick="showTab('weather')">🌦️ Wetter</div>
+</div>
+
+<div id="sensor">
+
+  <div class="card">🌡️ Temperatur: <span id="temp">--</span> °C</div>
+  <div class="card">💧 Luftfeuchte: <span id="hum">--</span> %</div>
+
+  <div class="card co2">
+    🫁 CO₂: <span id="co2">--</span> ppm
+    <div id="co2Status"></div>
+  </div>
+
+  <div class="card">🔥 KTY: <span id="kty">--</span> °C</div>
+
+</div>
+
+<div id="weather">
+  <div class="card">🌍 Ort: <span id="city">--</span></div>
+  <div class="card">🌡️ Temperatur: <span id="wtemp">--</span> °C</div>
+  <div class="card">🌥️ Wetter: <span id="desc">--</span></div>
+</div>
+
+<script>
+const url = "https://fsat23-co2-default-rtdb.europe-west1.firebasedatabase.app/sensor.json";
+
+// 🔄 Sensor Daten laden
+function loadData() {
+  fetch(url)
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("temp").innerText = data.temp;
+      document.getElementById("hum").innerText = data.hum;
+      document.getElementById("co2").innerText = data.co2;
+      document.getElementById("kty").innerText = data.kty;
+
+      updateCO2Color(data.co2);
+    });
+}
+
+// 🎨 CO2 Farbe
+function updateCO2Color(co2) {
+  const status = document.getElementById("co2Status");
+
+  if (co2 < 800) {
+    status.innerText = "Gut";
+    status.className = "green";
+  } else if (co2 < 1200) {
+    status.innerText = "Mittel";
+    status.className = "yellow";
+  } else {
+    status.innerText = "Schlecht";
+    status.className = "red";
+  }
+}
+
+// 🌦️ Wetter laden
+function loadWeather(lat, lon) {
+  const api = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`;
+
+  fetch(api)
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("wtemp").innerText = data.current_weather.temperature;
+      document.getElementById("desc").innerText = "Live Wetter";
+    });
+}
+
+// 📍 Standort holen
+navigator.geolocation.getCurrentPosition(pos => {
+  loadWeather(pos.coords.latitude, pos.coords.longitude);
+});
+
+// 🔁 Tabs wechseln
+function showTab(tab) {
+  document.getElementById("sensor").style.display = tab === "sensor" ? "block" : "none";
+  document.getElementById("weather").style.display = tab === "weather" ? "block" : "none";
+}
+
+// 🔄 Auto refresh
+setInterval(loadData, 2000);
+loadData();
+</script>
 
 </body>
 </html>
