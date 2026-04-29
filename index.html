@@ -1,61 +1,75 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <title>Raum Monitor</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8">
+<title>Raum Monitor</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <link rel="icon" href="icon.png">
-  <link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
 
-  <style>
-    body {
-      font-family: Arial;
-      background: #121212;
-      color: white;
-      text-align: center;
-    }
+<style>
+body {
+  font-family: Arial;
+  background: #121212;
+  color: white;
+  text-align: center;
+}
 
-    .tabs {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-      margin: 20px;
-    }
+.tabs {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin: 20px;
+}
 
-    .tab {
-      width: 80%;
-      max-width: 300px;
-      padding: 12px;
-      background: #333;
-      border-radius: 12px;
-      cursor: pointer;
-    }
+.tab {
+  width: 80%;
+  max-width: 300px;
+  padding: 12px;
+  background: #333;
+  border-radius: 12px;
+  cursor: pointer;
+}
 
-    .tab.active {
-      background: #555;
-    }
+.tab.active { background: #555; }
 
-    .card {
-      background: #1e1e1e;
-      margin: 15px;
-      padding: 20px;
-      border-radius: 15px;
-    }
+.card {
+  background: #1e1e1e;
+  margin: 15px;
+  padding: 20px;
+  border-radius: 15px;
+}
 
-    .green { color: #00ff88; }
-    .yellow { color: #ffcc00; }
-    .red { color: #ff4444; }
+.green { color: #00ff88; }
+.yellow { color: #ffcc00; }
+.red { color: #ff4444; }
 
-    #weather, #sliders {
-      display: none;
-    }
+#weather, #sliders { display: none; }
 
-    input[type=range] {
-      width: 80%;
-    }
-  </style>
+/* 🎚️ Slider Style wie Bild */
+input[type=range] {
+  -webkit-appearance: none;
+  width: 85%;
+  height: 18px;
+  border-radius: 20px;
+  background: linear-gradient(to right, #28d7e8 50%, #9e9e9e 50%);
+  border: 2px solid #777;
+  box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+}
+
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #eee;
+  border: 2px solid #ccc;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.6);
+  cursor: pointer;
+}
+</style>
 </head>
 
 <body>
@@ -82,19 +96,22 @@
   <div class="card">🔧 KTY Sensor: <span id="kty">--</span> °C</div>
 </div>
 
-<!-- 🧪 Slider Bereich -->
+<!-- 🎚️ Demo Slider -->
 <div id="sliders">
-  <div class="card">
-    🌡️ Temperatur: <input type="range" min="0" max="40" value="22" id="s_temp">
+  <div class="card">🌡️ Temperatur <br>
+    <input type="range" min="0" max="40" value="22" id="s_temp">
   </div>
-  <div class="card">
-    💧 Luftfeuchte: <input type="range" min="0" max="100" value="50" id="s_hum">
+
+  <div class="card">💧 Luftfeuchte <br>
+    <input type="range" min="0" max="100" value="50" id="s_hum">
   </div>
-  <div class="card">
-    🫁 CO₂: <input type="range" min="400" max="2000" value="800" id="s_co2">
+
+  <div class="card">🫁 CO₂ <br>
+    <input type="range" min="400" max="2000" value="800" id="s_co2">
   </div>
-  <div class="card">
-    🔧 KTY: <input type="range" min="0" max="50" value="22" id="s_kty">
+
+  <div class="card">🔧 KTY <br>
+    <input type="range" min="0" max="50" value="22" id="s_kty">
   </div>
 </div>
 
@@ -111,10 +128,10 @@ let warned = false;
 
 // Tabs
 function showTab(tab, el){
-  document.getElementById("sensor").style.display = (tab==="sensor") ? "block":"none";
-  document.getElementById("weather").style.display = (tab==="weather") ? "block":"none";
+  document.getElementById("sensor").style.display = tab==="sensor"?"block":"none";
+  document.getElementById("weather").style.display = tab==="weather"?"block":"none";
 
-  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
   el.classList.add("active");
 }
 
@@ -123,7 +140,7 @@ function openHandout(){
   window.open("handout.pdf","_blank");
 }
 
-// Demo Toggle
+// Demo
 function toggleDemo(){
   demoMode = !demoMode;
 
@@ -134,7 +151,7 @@ function toggleDemo(){
     demoMode ? "block" : "none";
 }
 
-// CO2 Farbe
+// CO2 Bewertung
 function updateCO2Color(co2){
   const s = document.getElementById("co2Status");
 
@@ -157,14 +174,25 @@ function updateCO2Color(co2){
   }
 }
 
-// Daten laden
+// 🎚️ Slider Farbe dynamisch
+function updateSliderStyle(slider){
+  const min = slider.min;
+  const max = slider.max;
+  const val = slider.value;
+  const percent = ((val-min)/(max-min))*100;
+
+  slider.style.background =
+    `linear-gradient(to right, #28d7e8 ${percent}%, #9e9e9e ${percent}%)`;
+}
+
+// Daten
 function loadData(){
 
   if(demoMode){
-    let temp = document.getElementById("s_temp").value;
-    let hum = document.getElementById("s_hum").value;
-    let co2 = document.getElementById("s_co2").value;
-    let kty = document.getElementById("s_kty").value;
+    let temp = s_temp.value;
+    let hum = s_hum.value;
+    let co2 = s_co2.value;
+    let kty = s_kty.value;
 
     document.getElementById("temp").innerText=temp;
     document.getElementById("hum").innerText=hum;
@@ -178,10 +206,10 @@ function loadData(){
   fetch(url)
     .then(r=>r.json())
     .then(d=>{
-      document.getElementById("temp").innerText=d.temp;
-      document.getElementById("hum").innerText=d.hum;
-      document.getElementById("co2").innerText=d.co2;
-      document.getElementById("kty").innerText=d.kty;
+      temp.innerText=d.temp;
+      hum.innerText=d.hum;
+      co2.innerText=d.co2;
+      kty.innerText=d.kty;
       updateCO2Color(d.co2);
     });
 }
@@ -191,18 +219,26 @@ navigator.geolocation.getCurrentPosition(pos=>{
   fetch(`https://api.open-meteo.com/v1/forecast?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&current_weather=true`)
   .then(r=>r.json())
   .then(d=>{
-    document.getElementById("wtemp").innerText=d.current_weather.temperature;
-    document.getElementById("desc").innerText="Live Wetter";
+    wtemp.innerText=d.current_weather.temperature;
+    desc.innerText="Live Wetter";
   });
 });
 
-// Notifications erlauben
+// Slider aktivieren
+document.querySelectorAll('input[type="range"]').forEach(slider=>{
+  updateSliderStyle(slider);
+  slider.addEventListener("input", ()=>{
+    updateSliderStyle(slider);
+    loadData();
+  });
+});
+
+// Notifications
 if("Notification" in window){
   Notification.requestPermission();
 }
 
-// Update
-setInterval(loadData, 1000);
+setInterval(loadData,1000);
 loadData();
 
 </script>
