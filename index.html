@@ -5,7 +5,6 @@
   <title>Raum Monitor</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <!-- App Icon -->
   <link rel="icon" href="icon.png">
   <link rel="apple-touch-icon" href="icon.png">
 
@@ -22,20 +21,23 @@
       margin-top: 20px;
     }
 
+    /* 🔽 Tabs jetzt UNTEREINANDER */
     .tabs {
       display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      margin: 20px 10px;
-      gap: 8px;
+      flex-direction: column;
+      align-items: center;
+      margin: 20px;
+      gap: 10px;
     }
 
     .tab {
-      padding: 10px 16px;
+      width: 80%;
+      max-width: 300px;
+      padding: 12px;
       cursor: pointer;
       background: #333;
-      border-radius: 10px;
-      user-select: none;
+      border-radius: 12px;
+      font-size: 18px;
     }
 
     .tab.active {
@@ -59,7 +61,7 @@
     .yellow { color: #ffcc00; }
     .red { color: #ff4444; }
 
-    #weather, #handoutInfo {
+    #weather {
       display: none;
     }
 
@@ -68,174 +70,159 @@
       margin: 10px;
       color: #cccccc;
     }
-
-    button {
-      background: #444;
-      color: white;
-      border: none;
-      padding: 12px 18px;
-      border-radius: 10px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background: #666;
-    }
   </style>
 </head>
 
 <body>
 
-  <h1>🏠 Raum Monitor</h1>
-  <div class="mode" id="modeLabel">📡 Live-Modus</div>
+<h1>🏠 Raum Monitor</h1>
+<div class="mode" id="modeLabel">📡 Live-Modus</div>
 
-  <div class="tabs">
-    <div class="tab active" onclick="showTab('sensor', this)">📊 Sensor</div>
-    <div class="tab" onclick="showTab('weather', this)">🌦️ Wetter</div>
-    <div class="tab" onclick="openHandout()">📄 Handout</div>
-    <div class="tab" onclick="toggleDemo()">🧪 Demo</div>
+<div class="tabs">
+  <div class="tab active" onclick="showTab('sensor', this)">📊 Sensor</div>
+  <div class="tab" onclick="showTab('weather', this)">🌦️ Wetter</div>
+  <div class="tab" onclick="openHandout()">📄 Handout</div>
+  <div class="tab" onclick="toggleDemo()">🧪 Demo</div>
+</div>
+
+<div id="sensor">
+  <div class="card">🌡️ Temperatur: <span id="temp">--</span> °C</div>
+  <div class="card">💧 Luftfeuchte: <span id="hum">--</span> %</div>
+
+  <div class="card co2">
+    🫁 CO₂: <span id="co2">--</span> ppm
+    <div id="co2Status">--</div>
   </div>
 
-  <div id="sensor">
-    <div class="card">🌡️ Temperatur: <span id="temp">--</span> °C</div>
-    <div class="card">💧 Luftfeuchte: <span id="hum">--</span> %</div>
+  <!-- 🔧 KTY geändert -->
+  <div class="card">🔧 KTY Sensor: <span id="kty">--</span> °C</div>
+</div>
 
-    <div class="card co2">
-      🫁 CO₂: <span id="co2">--</span> ppm
-      <div id="co2Status">--</div>
-    </div>
+<div id="weather">
+  <div class="card">🌡️ Temperatur: <span id="wtemp">--</span> °C</div>
+  <div class="card">🌥️ Wetter: <span id="desc">--</span></div>
+</div>
 
-    <div class="card">🔥 KTY: <span id="kty">--</span> °C</div>
-  </div>
+<script>
+const url = "https://fsat23-co2-default-rtdb.europe-west1.firebasedatabase.app/sensor.json";
 
-  <div id="weather">
-    <div class="card">🌡️ Temperatur: <span id="wtemp">--</span> °C</div>
-    <div class="card">🌥️ Wetter: <span id="desc">--</span></div>
-  </div>
+let warned = false;
+let demoMode = false;
 
-  <script>
-    const url = "https://fsat23-co2-default-rtdb.europe-west1.firebasedatabase.app/sensor.json";
+// 🔔 Notification Permission
+function requestNotificationPermission() {
+  if ("Notification" in window) {
+    Notification.requestPermission();
+  }
+}
+requestNotificationPermission();
 
-    let warned = false;
-    let demoMode = false;
+// 🔁 Tabs
+function showTab(tab, element) {
+  document.getElementById("sensor").style.display = tab === "sensor" ? "block" : "none";
+  document.getElementById("weather").style.display = tab === "weather" ? "block" : "none";
 
-    function requestNotificationPermission() {
-      if ("Notification" in window) {
-        Notification.requestPermission();
-      }
-    }
+  const tabs = document.querySelectorAll(".tab");
+  tabs.forEach(t => t.classList.remove("active"));
+  element.classList.add("active");
+}
 
-    requestNotificationPermission();
+// 📄 Handout
+function openHandout() {
+  window.open("handout.pdf", "_blank");
+}
 
-    function showTab(tab, element) {
-      document.getElementById("sensor").style.display = tab === "sensor" ? "block" : "none";
-      document.getElementById("weather").style.display = tab === "weather" ? "block" : "none";
+// 🧪 Demo Mode
+function toggleDemo() {
+  demoMode = !demoMode;
 
-      const tabs = document.querySelectorAll(".tab");
-      tabs.forEach(t => t.classList.remove("active"));
+  document.getElementById("modeLabel").innerText =
+    demoMode ? "🧪 Demo-Modus" : "📡 Live-Modus";
 
-      if (element) {
-        element.classList.add("active");
-      }
-    }
+  loadData();
+}
 
-    function openHandout() {
-      window.open("handout.pdf", "_blank");
-    }
+// 🎨 CO2 Bewertung
+function updateCO2Color(co2) {
+  const status = document.getElementById("co2Status");
 
-    function toggleDemo() {
-      demoMode = !demoMode;
+  if (co2 < 800) {
+    status.innerText = "🟢 Gut";
+    status.className = "green";
+    warned = false;
+  } 
+  else if (co2 < 1200) {
+    status.innerText = "🟡 Lüften empfohlen";
+    status.className = "yellow";
+    warned = false;
+  } 
+  else {
+    status.innerText = "🔴 SCHLECHT – LÜFTEN!";
+    status.className = "red";
 
-      document.getElementById("modeLabel").innerText =
-        demoMode ? "🧪 Demo-Modus" : "📡 Live-Modus";
-
-      loadData();
-    }
-
-    function updateCO2Color(co2) {
-      const status = document.getElementById("co2Status");
-
-      if (co2 < 800) {
-        status.innerText = "🟢 Gut";
-        status.className = "green";
-        warned = false;
-      } 
-      else if (co2 < 1200) {
-        status.innerText = "🟡 Lüften empfohlen";
-        status.className = "yellow";
-        warned = false;
-      } 
-      else {
-        status.innerText = "🔴 SCHLECHT – LÜFTEN!";
-        status.className = "red";
-
-        if (!warned && Notification.permission === "granted") {
-          new Notification("🚨 Luftqualität schlecht!", {
-            body: "Bitte lüften! CO₂ ist zu hoch.",
-            icon: "icon.png"
-          });
-          warned = true;
-        }
-      }
-    }
-
-    function loadData() {
-      if (demoMode) {
-        const data = {
-          temp: (20 + Math.random() * 5).toFixed(1),
-          hum: (35 + Math.random() * 25).toFixed(1),
-          co2: Math.floor(450 + Math.random() * 1000),
-          kty: (22 + Math.random() * 4).toFixed(1)
-        };
-
-        document.getElementById("temp").innerText = data.temp;
-        document.getElementById("hum").innerText = data.hum;
-        document.getElementById("co2").innerText = data.co2;
-        document.getElementById("kty").innerText = data.kty;
-
-        updateCO2Color(data.co2);
-        return;
-      }
-
-      fetch(url)
-        .then(res => res.json())
-        .then(data => {
-          document.getElementById("temp").innerText = data.temp;
-          document.getElementById("hum").innerText = data.hum;
-          document.getElementById("co2").innerText = data.co2;
-          document.getElementById("kty").innerText = data.kty;
-
-          updateCO2Color(data.co2);
-        })
-        .catch(error => {
-          console.log("Firebase Fehler:", error);
-        });
-    }
-
-    function loadWeather(lat, lon) {
-      const api = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`;
-
-      fetch(api)
-        .then(res => res.json())
-        .then(data => {
-          document.getElementById("wtemp").innerText = data.current_weather.temperature;
-          document.getElementById("desc").innerText = "Live Wetter";
-        })
-        .catch(error => {
-          document.getElementById("desc").innerText = "Wetter konnte nicht geladen werden";
-        });
-    }
-
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(pos => {
-        loadWeather(pos.coords.latitude, pos.coords.longitude);
+    if (!warned && Notification.permission === "granted") {
+      new Notification("🚨 Luftqualität schlecht!", {
+        body: "Bitte lüften!",
+        icon: "icon.png"
       });
+      warned = true;
     }
+  }
+}
 
-    setInterval(loadData, 2000);
-    loadData();
-  </script>
+// 🔄 Daten laden
+function loadData() {
+
+  if (demoMode) {
+    const data = {
+      temp: (20 + Math.random()*5).toFixed(1),
+      hum: (40 + Math.random()*20).toFixed(1),
+      co2: Math.floor(400 + Math.random()*1000),
+      kty: (22 + Math.random()*3).toFixed(1)
+    };
+
+    document.getElementById("temp").innerText = data.temp;
+    document.getElementById("hum").innerText = data.hum;
+    document.getElementById("co2").innerText = data.co2;
+    document.getElementById("kty").innerText = data.kty;
+
+    updateCO2Color(data.co2);
+    return;
+  }
+
+  fetch(url)
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("temp").innerText = data.temp;
+      document.getElementById("hum").innerText = data.hum;
+      document.getElementById("co2").innerText = data.co2;
+      document.getElementById("kty").innerText = data.kty;
+
+      updateCO2Color(data.co2);
+    });
+}
+
+// 🌦️ Wetter
+function loadWeather(lat, lon) {
+  const api = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`;
+
+  fetch(api)
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("wtemp").innerText = data.current_weather.temperature;
+      document.getElementById("desc").innerText = "Live Wetter";
+    });
+}
+
+// 📍 Standort
+navigator.geolocation.getCurrentPosition(pos => {
+  loadWeather(pos.coords.latitude, pos.coords.longitude);
+});
+
+// 🔄 Refresh
+setInterval(loadData, 2000);
+loadData();
+</script>
 
 </body>
 </html>
